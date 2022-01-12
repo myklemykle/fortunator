@@ -246,7 +246,7 @@ sincerity
 		// https://developer.mozilla.org/en-US/docs/Web/API/SpeechSynthesis
 		var synth = window.speechSynthesis;
 
-		document.onkeypress = function(event) {
+		var tellFortune = function(event) {
 			if (! synth.speaking) { 
 
 				els = {
@@ -276,6 +276,9 @@ sincerity
 
 			}
 		};
+
+		document.onkeypress = tellFortune;
+		document.onclick = tellFortune;
 
 	</script>
 	<link rel="stylesheet" href="reset.css" />
