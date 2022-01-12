@@ -1,30 +1,6 @@
 <html>
 <head>
 	<script type="text/javascript">
-		matcher=/\{[^\}\\]*\}/;
-
-		function pick(corpus, tag) {
-			//console.log("tag:" + tag);		//DEBUG
-			if (! corpus[tag])
-				return tag;
-			var item = corpus[tag][Math.floor(Math.random()*corpus[tag].length)];
-			//console.log("item:" + item);		//DEBUG
-
-			var match;
-			while (match = item.match(matcher)) {
-				//console.log("match:" + match[0]);		//DEBUG
-				var subtag = match[0].slice(1,-1); // strip brackets
-				//console.log("sub:" + subtag);		//DEBUG
-				item = item.replace(match[0], pick(corpus, subtag).trim());
-			}
-
-			return item;
-		}
-
-		// https://stackoverflow.com/questions/1026069/how-do-i-make-the-first-letter-of-a-string-uppercase-in-javascript
-		function capitalizeFirstLetter(string) {
-			return string.charAt(0).toUpperCase() + string.slice(1);
-		}
 
 		// https://stackoverflow.com/questions/805107/creating-multiline-strings-in-javascript
 		// this is a gross hack I wouldn't use if i wasn't writing this for older browsers,
@@ -35,6 +11,11 @@
 				replace(/^[^\/]+\/\*!?/, '').
 				replace(/\*\/[^\/]+$/, '');
 		}
+
+// Below is all of the text used for fortunes -- the corpus.  
+// Thanks to the magical hack (above), 
+// all of the text between {/*! and */} can be edited in place
+// without the need for any other funny javascript syntax.
 
 		prompts = hereDoc(function() {/*!
 Follow your heart to find {NOUN}
@@ -243,20 +224,57 @@ sincerity
 			"NOUN": nouns.split('\n')
 		};
 
-		// https://developer.mozilla.org/en-US/docs/Web/API/SpeechSynthesis
-		var synth = window.speechSynthesis;
+		// Generate a random fortune from the corpus
+		function pick(corpus, tag) {
+			matcher=/\{[^\}\\]*\}/;
 
-		var hide = function(el){
-			el.classList.remove("fadein");
-			el.classList.add("fadeout");
-		}
-		var show = function(el){
-			el.classList.remove("fadeout");
-			el.classList.add("fadein");
+			//console.log("tag:" + tag);		//DEBUG
+			if (! corpus[tag])
+				return tag;
+
+			// Pick an item out of the corpus:
+			var item = corpus[tag][Math.floor(Math.random()*corpus[tag].length)];
+			//console.log("item:" + item);		//DEBUG
+
+			// If the item has any bracketed items like {NOUN}, 
+			// fill those in using recursion.
+			var match;
+			while (match = item.match(matcher)) {
+				//console.log("match:" + match[0]);		//DEBUG
+				var subtag = match[0].slice(1,-1); // strip brackets
+				//console.log("sub:" + subtag);		//DEBUG
+				item = item.replace(match[0], pick(corpus, subtag).trim());
+			}
+
+			return item;
 		}
 
+
+
+		////////
+		// Tell a random fortune, 
+		// on screen & with speech:
 
 		var tellFortune = function(event) {
+
+			// Fix capitalization:
+			// https://stackoverflow.com/questions/1026069/how-do-i-make-the-first-letter-of-a-string-uppercase-in-javascript
+			function capitalizeFirstLetter(string) {
+				return string.charAt(0).toUpperCase() + string.slice(1);
+			}
+
+			var hide = function(el){
+				el.classList.remove("fadein");
+				el.classList.add("fadeout");
+			}
+			var show = function(el){
+				el.classList.remove("fadeout");
+				el.classList.add("fadein");
+			}
+
+			resetTimer();
+			// https://developer.mozilla.org/en-US/docs/Web/API/SpeechSynthesis
+			var synth = window.speechSynthesis;
 			if (! synth.speaking) { 
 
 				els = {
@@ -272,6 +290,7 @@ sincerity
 				var finish = function(event) { 
 					hide(els.fortune);
 					show(els.intro);
+					resetTimer();
 					// flush key events?
 				};
 
@@ -285,6 +304,30 @@ sincerity
 
 		document.onkeypress = tellFortune;
 		document.onclick = tellFortune;
+
+		///////////////
+		// use a timer to occasionally tell a fortune when idle,
+		// even if nobody interacts.
+		// note that some browsers won't let this work unless someone has already interacted with the page at least once.
+
+	  // https://stackoverflow.com/questions/667555/how-to-detect-idle-time-in-javascript
+		var timer;
+
+		function resetTimer() {
+			clearTimeout(timer);
+			// wait between 1 and 5 minutes before talking:
+			var min = 1000 * 60 * 1; 
+			var range = 1000 * 60 * 4; 
+			var idletime = Math.floor(Math.random() * range + min);
+				timer = setTimeout(tellFortune, idletime)
+				// 1000 milliseconds = 1 second
+		}
+
+		window.addEventListener('load', resetTimer, true);
+		var events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+		events.forEach(function(name) {
+		 document.addEventListener(name, resetTimer, true);
+		});
 
 	</script>
 	<link rel="stylesheet" href="reset.css" />
