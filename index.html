@@ -246,6 +246,16 @@ sincerity
 		// https://developer.mozilla.org/en-US/docs/Web/API/SpeechSynthesis
 		var synth = window.speechSynthesis;
 
+		var hide = function(el){
+			el.classList.remove("fadein");
+			el.classList.add("fadeout");
+		}
+		var show = function(el){
+			el.classList.remove("fadeout");
+			el.classList.add("fadein");
+		}
+
+
 		var tellFortune = function(event) {
 			if (! synth.speaking) { 
 
@@ -255,23 +265,19 @@ sincerity
 				};
 
 				var fortune = capitalizeFirstLetter(pick(corpus, "MAIN"));
-				// hide intro
-				els.intro.style.display = "none";
-				// show fortune
 				els.fortune.innerHTML = fortune;
-				els.fortune.style.display = "block";
+				hide(els.intro);
+				show(els.fortune);
 
-				var hide = function(event) { 
-					// hide fortune
-					els.fortune.style.display = "none";
-					// show intro
-					els.intro.style.display = "block";
+				var finish = function(event) { 
+					hide(els.fortune);
+					show(els.intro);
 					// flush key events?
 				};
 
 				var utterThis = new SpeechSynthesisUtterance(fortune);
-				utterThis.addEventListener('end', hide);
-				utterThis.addEventListener('error', hide);
+				utterThis.addEventListener('end', finish);
+				utterThis.addEventListener('error', finish);
 				synth.speak(utterThis);
 
 			}
@@ -315,10 +321,12 @@ sincerity
 			text-align: center;
 			font-size: 6em;
 			-webkit-text-stroke: 0.03em white;
+			transition: opacity 1s;
 		}
 
 		.intro {
 			font-size: 6vw;
+			opacity: 1;
 		}
 
 		.fortune {
@@ -330,7 +338,15 @@ sincerity
 			width: 80%;
 			margin-left: 10%;
 			margin-right: 10%;
-			display: none; 
+			opacity: 0;
+		}
+
+		.fadeout {
+			opacity: 0;
+		}
+
+		.fadein { 
+			opacity: 1;
 		}
 
 	</style>
